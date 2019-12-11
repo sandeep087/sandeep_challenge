@@ -1,0 +1,15 @@
+---
+
+        
+- name: install httpd
+  yum: name=httpd state=present
+
+- name: Copy file from local to remote
+  copy: src=index.html dest=/var/www/html/index.html mode=0755
+
+- name: start httpd service
+  service: name=httpd state=started enabled=yes
+
+- name: wait for httpd port to start
+  wait_for: port=80
+
