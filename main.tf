@@ -223,7 +223,7 @@ resource "aws_elb" "wp_elb" {
   security_groups = ["${aws_security_group.wp_sg.id}"]
 
   listener {
-    instance_port     = 8080
+    instance_port     = 80
     instance_protocol = "tcp"
     lb_port           = 80
     lb_protocol       = "tcp"
@@ -366,7 +366,7 @@ script = "wait_for_instance.sh"
 }
 
 provisioner "local-exec" {
-     command = "echo \"[httpd-servers]\n${aws_instance.webserver.public_ip} ansible_connection=ssh ansible_ssh_user=ec2-user ansible_ssh_private_key_file=mykey host_key_checking=False\" > httpd-inventory &&  ansible-playbook -i httpd-inventory ansible-playbooks/httpd.yml "
+     command = "echo \"[httpd-servers]\n${aws_instance.webserver.public_ip} ansible_connection=ssh ansible_ssh_user=ubuntu ansible_ssh_private_key_file=mykey host_key_checking=false\" > httpd-inventory &&  ansible-playbook -i httpd-inventory ansible-playbooks/httpd.yml "
 }
 
 connection {

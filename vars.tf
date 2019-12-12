@@ -1,9 +1,9 @@
 variable "aws_access_key" {
-  default = "AKIAQ45XJYJY76YCNWKM"
+  default = "*****************"
 }
 
 variable "aws_secret_key" {
- default = "wUcdn57kP6pTQbOlB0ETqh5/0iY3NkTmWBWJiK9o"
+ default = "******************************"
 }
 
 variable "AWS_REGION" {
@@ -23,7 +23,7 @@ variable "PATH_TO_PUBLIC_KEY" {
   default = "mykey.pub"
 }
 variable "INSTANCE_USERNAME" {
-  default = "ec2-user"
+  default = "ubuntu"
 }
 
 data "aws_availability_zones" "available" {}
