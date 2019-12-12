@@ -7,6 +7,23 @@ provider "aws" {
   region  = "us-east-1"
 }
 
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+
+
 #---Key----
 
 resource "aws_key_pair" "mykey" {
@@ -198,18 +215,7 @@ resource "aws_route" "nat_gateway" {
 }
 
 
-
-#----ELB---
-
-resource "aws_iam_server_certificate" "test_cert" {
-  name             = "some_test_cert"
-  certificate_body = "${file("server.csr")}"
-  private_key      = "${file("server.key")}"
-}
-
 resource "aws_elb" "wp_elb" {
-  name = "newbalancer-elb"
-
   subnets = ["${aws_subnet.wp_public1_subnet.id}",
     "${aws_subnet.wp_public2_subnet.id}",
   ]
@@ -221,13 +227,6 @@ resource "aws_elb" "wp_elb" {
     instance_protocol = "tcp"
     lb_port           = 80
     lb_protocol       = "tcp"
-  }
- listener {
-    instance_port     = 8443
-    instance_protocol = "https"
-    lb_port           = 443
-    lb_protocol       = "https"
-    ssl_certificate_id = "${aws_iam_server_certificate.test_cert.arn}"
   }
 
 
@@ -348,15 +347,16 @@ resource "aws_cloudwatch_metric_alarm" "monitor_down" {
 #---AMI--
 
 resource "aws_ami_from_instance" "wp_golden" {
-  name               = "wp_ami_httpd"
+  name               = "wp_ami_tomcat"
   source_instance_id = "${aws_instance.webserver.id}"
 }
+
 
 #instances
 
 resource "aws_instance" "webserver" {
-  ami             =  "${lookup(var.AMIS, var.AWS_REGION)}"
-  instance_type   = "t2.micro"
+  ami             = "${data.aws_ami.ubuntu.id}"
+  instance_type   = "t2.small"
   key_name        = "${aws_key_pair.mykey.key_name}"
   vpc_security_group_ids = ["${aws_security_group.wp_sg.id}"]
   subnet_id       = "${aws_subnet.wp_public1_subnet.id}"
@@ -365,20 +365,18 @@ provisioner "remote-exec" {
 script = "wait_for_instance.sh"
 }
 
-
-
 provisioner "local-exec" {
      command = "echo \"[httpd-servers]\n${aws_instance.webserver.public_ip} ansible_connection=ssh ansible_ssh_user=ec2-user ansible_ssh_private_key_file=mykey host_key_checking=False\" > httpd-inventory &&  ansible-playbook -i httpd-inventory ansible-playbooks/httpd.yml "
 }
- connection {
+
+connection {
     user = "${var.INSTANCE_USERNAME}"
     private_key = "${file("${var.PATH_TO_PRIVATE_KEY}")}"
-    host = self.public_ip 
+    host = "${aws_instance.webserver.public_ip}" 
+    password = "${file("${var.PATH_TO_PRIVATE_KEY}")}"
 }
-
-
+  
  tags = {
      Name = "Hello"
    }
 }
-
